@@ -1,6 +1,6 @@
+import os
 from flask import Blueprint, request, jsonify
 from services.s3_toolkit import delete_from_s3
-from config import get_s3_config
 
 v1_s3_delete_bp = Blueprint("v1_s3_delete", __name__)
 
@@ -12,8 +12,12 @@ def s3_delete():
         if not file_key:
             return jsonify({"error": "file_key is required"}), 400
 
-        # Берём настройки S3 из .env
-        s3_url, access_key, secret_key, bucket_name, region = get_s3_config()
+        # Берём настройки S3 из переменных окружения (.env)
+        s3_url = os.getenv("S3_URL")
+        access_key = os.getenv("S3_ACCESS_KEY")
+        secret_key = os.getenv("S3_SECRET_KEY")
+        bucket_name = os.getenv("S3_BUCKET_NAME")
+        region = os.getenv("S3_REGION")
 
         response = delete_from_s3(
             s3_url, access_key, secret_key, bucket_name, region, file_key
