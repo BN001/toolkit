@@ -12,7 +12,7 @@ def s3_delete():
         if not file_key:
             return jsonify({"error": "file_key is required"}), 400
 
-        # Берём настройки S3 из переменных окружения (.env)
+        # Используем такие же переменные, как upload/list
         s3_url = os.getenv("S3_URL")
         access_key = os.getenv("S3_ACCESS_KEY")
         secret_key = os.getenv("S3_SECRET_KEY")
