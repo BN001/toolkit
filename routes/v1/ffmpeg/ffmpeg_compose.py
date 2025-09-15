@@ -138,6 +138,7 @@ def ffmpeg_api(job_id, data):
         for i, output_filename in enumerate(output_filenames):
             if os.path.exists(output_filename):
                 upload_url = upload_file(output_filename, output_dir=output_dir)
+                output_info = {"file_url": upload_url}
     ### --- END --- добавил я - поддержка сохранения в output_dir
 
                 
