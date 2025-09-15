@@ -106,6 +106,7 @@ logger = logging.getLogger(__name__)
                 "encoder": {"type": "boolean"}
             }
         },
+        "output_dir": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
