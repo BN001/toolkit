@@ -117,14 +117,28 @@ def ffmpeg_api(job_id, data):
     logger.info(f"Job {job_id}: Received flexible FFmpeg request")
 
     try:
-        output_filenames, metadata = process_ffmpeg_compose(data, job_id)
+    #    output_filenames, metadata = process_ffmpeg_compose(data, job_id)
         
-        # Upload output files to GCP and create result array
+    #    # Upload output files to GCP and create result array
+    #    output_urls = []
+    #    for i, output_filename in enumerate(output_filenames):
+    #        if os.path.exists(output_filename):
+    #            upload_url = upload_file(output_filename)
+    #            output_info = {"file_url": upload_url}
+
+    ### --- START --- добавил я - поддержка сохранения в output_dir
+        output_filenames, metadata = process_ffmpeg_compose(data, job_id)
+
+        # Поддержка output_dir (как в caption)
+        output_dir = data.get("output_dir")
+
+        # Upload output files to cloud storage and create result array
         output_urls = []
         for i, output_filename in enumerate(output_filenames):
             if os.path.exists(output_filename):
-                upload_url = upload_file(output_filename)
-                output_info = {"file_url": upload_url}
+                upload_url = upload_file(output_filename, output_dir=output_dir)
+    ### --- END --- добавил я - поддержка сохранения в output_dir
+
                 
                 if metadata and i < len(metadata):
                     output_metadata = metadata[i]
