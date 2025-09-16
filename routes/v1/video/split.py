@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
         "video_crf": {"type": "number", "minimum": 0, "maximum": 51},
         "audio_codec": {"type": "string"},
         "audio_bitrate": {"type": "string"},
+        "output_dir": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -67,6 +68,7 @@ def video_split(job_id, data):
     video_crf = data.get('video_crf', 23)
     audio_codec = data.get('audio_codec', 'aac')
     audio_bitrate = data.get('audio_bitrate', '128k')
+    output_dir = data.get("output_dir")
     
     logger.info(f"Job {job_id}: Received video split request for {video_url}")
     
@@ -88,7 +90,11 @@ def video_split(job_id, data):
         result_files = []
         
         for i, output_file in enumerate(output_files):
-            cloud_url = upload_file(output_file)
+            cloud_url = upload_file(
+                output_file,
+                output_dir=output_dir  # поддержка output_dir
+            )
+
             result_files.append({
                 "file_url": cloud_url,
                 "start": splits[i]["start"],
