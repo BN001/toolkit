@@ -1,0 +1,45 @@
+@@ -15,6 +15,7 @@
+     "type": "object",
+     "properties": {
+         "video_url": {"type": "string", "format": "uri"},
+         "splits": {
+             "type": "array",
+             "items": {
+                 "type": "object",
+                 "properties": {
+                     "start": {"type": "string"},
+                     "end": {"type": "string"}
+                 },
+                 "required": ["start", "end"]
+             },
+             "minItems": 1
+         },
++        "output_dir": {"type": "string"},
+         "webhook_url": {"type": "string", "format": "uri"},
+         "id": {"type": "string"}
+     },
+@@ -45,10 +46,16 @@
+     try:
+-        output_filenames = process_video_split(data, job_id)
+-
+-        output_urls = []
+-        for output_filename in output_filenames:
+-            if os.path.exists(output_filename):
+-                upload_url = upload_file(output_filename)
+-                output_urls.append({"file_url": upload_url})
+-                os.remove(output_filename)
+-            else:
+-                raise Exception(f"Expected output file {output_filename} not found")
++        output_filenames = process_video_split(data, job_id)
++
++        # Поддержка output_dir (как в compose)
++        output_dir = data.get("output_dir")
++
++        output_urls = []
++        for output_filename in output_filenames:
++            if os.path.exists(output_filename):
++                upload_url = upload_file(output_filename, output_dir=output_dir)
++                output_urls.append({"file_url": upload_url})
++                os.remove(output_filename)  # Clean up local file
++            else:
++                raise Exception(f"Expected output file {output_filename} not found")
