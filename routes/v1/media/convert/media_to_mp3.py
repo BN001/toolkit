@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
         "bitrate": {"type": "string", "pattern": "^[0-9]+k$"},
-        "sample_rate": {"type": "number"}
+        "sample_rate": {"type": "number"},
         "output": {"type": "string"}   # 👈 добавлено
     },
     "required": ["media_url"],
@@ -60,7 +60,7 @@ def convert_media_to_mp3(job_id, data):
         logger.info(f"Job {job_id}: Media conversion process completed successfully")
 
         # 👇 передаём папку в upload_file
-        cloud_url = upload_file(output_file, output_folder=output_folder)
+        cloud_url = upload_file(output_file, output_dir=output_folder)
         # cloud_url = upload_file(output_file) - закоментил, и добавил передачу пути сохранения
         
         logger.info(f"Job {job_id}: Converted media uploaded to cloud storage: {cloud_url}")
