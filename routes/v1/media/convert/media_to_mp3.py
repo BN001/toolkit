@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
         "id": {"type": "string"},
         "bitrate": {"type": "string", "pattern": "^[0-9]+k$"},
         "sample_rate": {"type": "number"}
+        "output": {"type": "string"}   # 👈 добавлено
     },
     "required": ["media_url"],
     "additionalProperties": False
@@ -50,6 +51,7 @@ def convert_media_to_mp3(job_id, data):
     id = data.get('id')
     bitrate = data.get('bitrate', '128k')
     sample_rate = data.get('sample_rate')
+    output_folder = data.get('output', 'output')  # 👈 новая строка
 
     logger.info(f"Job {job_id}: Received media-to-mp3 request for media URL: {media_url}")
 
@@ -57,7 +59,10 @@ def convert_media_to_mp3(job_id, data):
         output_file = process_media_to_mp3(media_url, job_id, bitrate, sample_rate)
         logger.info(f"Job {job_id}: Media conversion process completed successfully")
 
-        cloud_url = upload_file(output_file)
+        # 👇 передаём папку в upload_file
+        cloud_url = upload_file(output_file, output_folder=output_folder)
+        # cloud_url = upload_file(output_file) - закоментил, и добавил передачу пути сохранения
+        
         logger.info(f"Job {job_id}: Converted media uploaded to cloud storage: {cloud_url}")
 
         return cloud_url, "/v1/media/transform/mp3", 200
