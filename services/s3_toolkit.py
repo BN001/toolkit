@@ -19,6 +19,7 @@
 import os
 import boto3
 import logging
+import mimetypes  # для определения типа файла
 from urllib.parse import urlparse, quote
 
 # START ---- Добавил я для определения signature_version
@@ -58,6 +59,11 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region,
             output_s3_path = output_dir + basename
         else:
             output_s3_path = basename
+        
+        # определяем content_type для правильной загрузки видео, аудио, картинки и тд.  
+        content_type, _ = mimetypes.guess_type(file_path)
+        if not content_type:
+            content_type = "application/octet-stream"
 
         # загружаем
         with open(file_path, 'rb') as data:
@@ -65,7 +71,11 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region,
                 data,
                 bucket_name,
                 output_s3_path,
-                ExtraArgs={'ACL': 'public-read'}
+                # ExtraArgs={'ACL': 'public-read'}
+                ExtraArgs={
+                        'ACL': 'public-read',
+                        'ContentType': content_type
+                    }
             )
 
         encoded_key = quote(output_s3_path)
