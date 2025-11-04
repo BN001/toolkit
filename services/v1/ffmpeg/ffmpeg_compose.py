@@ -167,33 +167,41 @@ def process_ffmpeg_compose(data, job_id):
 #            filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
 #            new_filters.append(filter_str)
 
-# ZN: добавляем поддержку переноса строк
+    # ZN: добавляем поддержку переноса строк по ширине видео
         for filter_obj in data["filters"]:
             filter_str = filter_obj["filter"]
-        
-            # ZN: Если в фильтре присутствует "text=" — применим авторазбиение по строкам
+    
+            # ZN: если есть текст — применим авторазбиение по строкам с учётом fontsize и ширины видео
             if "text=" in filter_str:
                 try:
-                    # ZN: Ищем текст в кавычках
+                    # 1. извлекаем текст
                     match = re.search(r"text='([^']*)'", filter_str)
                     if match:
                         raw_text = match.group(1)
-                        # ZN: Берём параметр max_words_per_line (по умолчанию 6)
-                        max_words = int(filter_obj.get("max_words_per_line", 6))
-                        wrapped = wrap_text_by_words(raw_text, max_words)
-                        # ZN: Заменяем текст внутри фильтра на разбитый по строкам
+    
+                        # 2. определяем fontsize
+                        fs_match = re.search(r"fontsize=(\d+)", filter_str)
+                        fontsize = int(fs_match.group(1)) if fs_match else 64
+    
+                        # 3. узнаём ширину видео (ffprobe)
+                        ffprobe_cmd = f"ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 {input_paths[0]}"
+                        width_output = subprocess.check_output(ffprobe_cmd, shell=True, text=True).strip()
+                        video_width = int(width_output) if width_output else 720
+    
+                        # 4. формируем перенос
+                        wrapped = wrap_text_to_fit_width(raw_text, video_width, fontsize)
                         filter_str = re.sub(r"text='[^']*'", f"text='{wrapped}'", filter_str)
                 except Exception as e:
                     print(f"[WARN] text wrapping failed: {e}")
-        
+    
+            # 5. заменяем возможные subtitles URL → локальные
             def replace_subtitles_url(match):
                 url = match.group(1)
                 local_path = download_file(url, LOCAL_STORAGE_PATH)
-                subtitles_paths.append(local_path)
                 fixed_path = local_path.replace('\\', '/')
-                return f"subtitles='{fixed_path}"  # keep the opening quote
-        
+                return f"subtitles='{fixed_path}"
             filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
+    
             new_filters.append(filter_str)
 # ZN: добавляем поддержку переноса строк
         
