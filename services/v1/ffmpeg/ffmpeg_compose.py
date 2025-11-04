@@ -23,6 +23,32 @@ import re
 from services.file_management import download_file
 from config import LOCAL_STORAGE_PATH
 
+import os
+import subprocess
+import json
+import re
+from services.file_management import download_file
+from config import LOCAL_STORAGE_PATH
+
+# ZN: добавляем поддержку переноса строк
+def wrap_text_by_words(text: str, max_words_per_line: int = 6) -> str:
+    """
+    ZN: Делит текст на строки, чтобы не выходил за рамки кадра по количеству слов.
+    Поведение как в generate_ass_captions_v1 → process_subtitle_text().
+    """
+    if not text:
+        return text
+    words = text.split()
+    if max_words_per_line <= 0:
+        return text
+    lines = [
+        ' '.join(words[i:i + max_words_per_line])
+        for i in range(0, len(words), max_words_per_line)
+    ]
+    # ZN: Для ffmpeg нужен \n, а не \\N (как в ASS)
+    return r'\n'.join(lines)
+# ZN: добавляем поддержку переноса строк
+
 def get_extension_from_format(format_name):
     # Mapping of common format names to file extensions
     format_to_extension = {
@@ -122,17 +148,48 @@ def process_ffmpeg_compose(data, job_id):
     subtitles_paths = []  # Track downloaded subtitles/filter files
     if data.get("filters"):
         new_filters = []
+#        for filter_obj in data["filters"]:
+#            filter_str = filter_obj["filter"]
+#            def replace_subtitles_url(match):
+#                url = match.group(1)
+#                local_path = download_file(url, LOCAL_STORAGE_PATH)
+#                subtitles_paths.append(local_path)
+#                fixed_path = local_path.replace('\\', '/')
+#                return f"subtitles='{fixed_path}"  # keep the opening quote
+#            # Regex: subtitles='<url>' or subtitles="<url>"
+#            filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
+#            new_filters.append(filter_str)
+
+# ZN: добавляем поддержку переноса строк
         for filter_obj in data["filters"]:
             filter_str = filter_obj["filter"]
+        
+            # ZN: Если в фильтре присутствует "text=" — применим авторазбиение по строкам
+            if "text=" in filter_str:
+                try:
+                    # ZN: Ищем текст в кавычках
+                    match = re.search(r"text='([^']*)'", filter_str)
+                    if match:
+                        raw_text = match.group(1)
+                        # ZN: Берём параметр max_words_per_line (по умолчанию 6)
+                        max_words = int(filter_obj.get("max_words_per_line", 6))
+                        wrapped = wrap_text_by_words(raw_text, max_words)
+                        # ZN: Заменяем текст внутри фильтра на разбитый по строкам
+                        filter_str = re.sub(r"text='[^']*'", f"text='{wrapped}'", filter_str)
+                except Exception as e:
+                    print(f"[WARN] text wrapping failed: {e}")
+        
             def replace_subtitles_url(match):
                 url = match.group(1)
                 local_path = download_file(url, LOCAL_STORAGE_PATH)
                 subtitles_paths.append(local_path)
                 fixed_path = local_path.replace('\\', '/')
                 return f"subtitles='{fixed_path}"  # keep the opening quote
-            # Regex: subtitles='<url>' or subtitles="<url>"
+        
             filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
             new_filters.append(filter_str)
+# ZN: добавляем поддержку переноса строк
+        
         filter_complex = ";".join(new_filters)
         command.extend(["-filter_complex", filter_complex])
     
