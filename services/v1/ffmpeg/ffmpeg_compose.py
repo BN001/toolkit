@@ -20,33 +20,40 @@ import os
 import subprocess
 import json
 import re
-from services.file_management import download_file
-from config import LOCAL_STORAGE_PATH
 
-import os
-import subprocess
-import json
-import re
+# ZN: перенос текста по ширине видео с учётом размера шрифта
+import math
+# ZN: перенос текста по ширине видео с учётом размера шрифта
+
 from services.file_management import download_file
 from config import LOCAL_STORAGE_PATH
 
 # ZN: добавляем поддержку переноса строк
-def wrap_text_by_words(text: str, max_words_per_line: int = 6) -> str:
+def wrap_text_to_fit_width(text: str, video_width: int, fontsize: int = 64) -> str:
     """
-    ZN: Делит текст на строки, чтобы не выходил за рамки кадра по количеству слов.
-    Поведение как в generate_ass_captions_v1 → process_subtitle_text().
+    ZN: Делит текст на строки с учётом ширины видео и размера шрифта.
+    Средняя ширина символа ≈ 0.6 * fontsize.
     """
     if not text:
         return text
-    words = text.split()
-    if max_words_per_line <= 0:
-        return text
-    lines = [
-        ' '.join(words[i:i + max_words_per_line])
-        for i in range(0, len(words), max_words_per_line)
-    ]
-    # ZN: Для ffmpeg нужен \n, а не \\N (как в ASS)
-    return r'\n'.join(lines)
+
+    # Примерная ширина символа
+    avg_px_per_char = fontsize * 0.6
+
+    # Сколько символов помещается в одну строку (оставим 90% ширины для отступов)
+    max_chars = int((video_width * 0.9) / avg_px_per_char)
+
+    # Перенос строк
+    import textwrap
+    wrapped = textwrap.fill(
+        text,
+        width=max_chars,
+        break_long_words=False,
+        break_on_hyphens=False
+    )
+
+    # Для ffmpeg нужны \n, а не реальные переводы
+    return wrapped.replace("\n", r"\n")
 # ZN: добавляем поддержку переноса строк
 
 def get_extension_from_format(format_name):
