@@ -201,6 +201,7 @@ def process_ffmpeg_compose(data, job_id):
                         # перезаписываем файл (перенос добавлен)
                         with open(fixed_path, "w", encoding="utf-8") as f:
                             f.write(wrapped)
+
                         
                         filter_str += f":textfile='{fixed_path}'"
                         print(f"[INFO] text_file_url loaded: {fixed_path}")
