@@ -217,7 +217,10 @@ def process_ffmpeg_compose(data, job_id):
                 fixed_path = local_path.replace('\\', '/')
                 return f"subtitles='{fixed_path}"
             filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
-    
+
+            # 🧩 Логирование финального фильтра
+            print(f"[DEBUG] Final FFmpeg filter: {filter_str}")
+            
             new_filters.append(filter_str)
 # ZN: добавляем поддержку переноса строк
         
