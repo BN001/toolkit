@@ -59,9 +59,11 @@ logger = logging.getLogger(__name__)
             "items": {
                 "type": "object",
                 "properties": {
-                    "filter": {"type": "string"}
+                    "filter": {"type": "string"},
+                    "text_file_url": {"type": "string", "format": "uri"}
                 },
-                "required": ["filter"]
+                "required": ["filter"],
+                "additionalProperties": False
             }
         },
         "outputs": {
