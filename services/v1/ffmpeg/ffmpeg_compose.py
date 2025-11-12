@@ -172,6 +172,18 @@ def process_ffmpeg_compose(data, job_id):
             filter_str = filter_obj["filter"]
     
             # ZN: если есть текст — применим авторазбиение по строкам с учётом fontsize и ширины видео
+            #  мягкая поддержка text_file_url (не влияет на старые запросы)
+            if "text_file_url" in filter_obj and filter_obj["text_file_url"]:
+                try:
+                    local_path = download_file(filter_obj["text_file_url"], LOCAL_STORAGE_PATH)
+                    fixed_path = local_path.replace('\\', '/')
+                    if "textfile=" not in filter_str:
+                        filter_str += f":textfile='{fixed_path}'"
+                except Exception as e:
+                    print(f"[WARN] text_file_url download failed: {e}")
+
+            #  оригинальная логика переноса строк
+
             if "text=" in filter_str:
                 try:
                     # 1. извлекаем текст
