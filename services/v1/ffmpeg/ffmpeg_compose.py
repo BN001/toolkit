@@ -182,6 +182,27 @@ def process_ffmpeg_compose(data, job_id):
                         if "text=" in filter_str:
                             filter_str = re.sub(r":?text='[^']*'", "", filter_str)
                         # добавляем :textfile='...' в фильтр
+                        # читаем содержимое текстового файла
+                        with open(fixed_path, "r", encoding="utf-8") as f:
+                            raw_text = f.read()
+                        
+                        # узнаём ширину видео
+                        ffprobe_cmd = f"ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 {input_paths[0]}"
+                        width_output = subprocess.check_output(ffprobe_cmd, shell=True, text=True).strip()
+                        video_width = int(width_output) if width_output else 720
+                        
+                        # определяем размер шрифта
+                        fs_match = re.search(r"fontsize=(\\d+)", filter_str)
+                        fontsize = int(fs_match.group(1)) if fs_match else 64
+                        
+                        # формируем перенос строк
+                        wrapped = wrap_text_to_fit_width(raw_text, video_width, fontsize)
+                        
+                        # перезаписываем файл с добавленными переносами
+                        with open(fixed_path, "w", encoding="utf-8") as f:
+                            f.write(wrapped)
+                        
+                        print(f"[INFO] Wrapped text for text_file_url: {wrapped[:120]}...")
                          
                         filter_str += f":textfile='{fixed_path}'"
                         print(f"[INFO] text_file_url loaded: {fixed_path}")
