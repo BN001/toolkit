@@ -53,7 +53,8 @@ def wrap_text_to_fit_width(text: str, video_width: int, fontsize: int = 64) -> s
     )
 
     # Для ffmpeg нужны \n, а не реальные переводы
-    return wrapped.replace("\n", r"\n")
+#    return wrapped.replace("\n", r"\n")
+    return wrapped   # НИЧЕГО НЕ ЭКРАНИРУЕМ!
 # ZN: добавляем поддержку переноса строк
 
 def get_extension_from_format(format_name):
