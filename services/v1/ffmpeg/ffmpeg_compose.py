@@ -178,10 +178,14 @@ def process_ffmpeg_compose(data, job_id):
                     local_path = download_file(filter_obj["text_file_url"], LOCAL_STORAGE_PATH)
                     fixed_path = local_path.replace('\\', '/')
                     if "textfile=" not in filter_str:
+                        # если был inline text= — уберём его, чтобы не конфликтовал
+                        if "text=" in filter_str:
+                            filter_str = re.sub(r":?text='[^']*'", "", filter_str)
+                        # добавляем :textfile='...' в фильтр
                         filter_str += f":textfile='{fixed_path}'"
+                        print(f"[INFO] text_file_url loaded: {fixed_path}")
                 except Exception as e:
                     print(f"[WARN] text_file_url download failed: {e}")
-
             #  оригинальная логика переноса строк
 
             if "text=" in filter_str:
