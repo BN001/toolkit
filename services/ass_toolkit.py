@@ -623,6 +623,7 @@ def srt_to_ass(transcription_result, style_type, settings, replace_dict, video_r
         'y': None,
         'position': 'middle_center',
         'alignment': 'center'  # default alignment
+        'background_opacity': 1.0,  # 1.0 = полностью непрозрачный фон (если border_style=3)
     }
     style_options = {**default_style_settings, **settings}
 
