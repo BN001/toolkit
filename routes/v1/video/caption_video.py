@@ -71,6 +71,13 @@ logger = logging.getLogger(__name__)
                 "spacing": {"type": "integer"},
                 "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
+                
+                # --- NEW FIELDS ---
+                "box_color": {"type": "string"},
+                "border_style": {"type": "integer"},
+                "background_opacity": {"type": "number"}
+                # --- END NEW ---
+                
             },
             "additionalProperties": False
         },
