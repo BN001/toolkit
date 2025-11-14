@@ -256,21 +256,56 @@ def create_style_line(style_options, video_resolution):
     line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
     secondary_color = line_color
     outline_color = rgb_to_ass_color(style_options.get('outline_color', '#000000'))
-    box_color = rgb_to_ass_color(style_options.get('box_color', '#000000'))
+#    box_color = rgb_to_ass_color(style_options.get('box_color', '#000000'))
+#
+#    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
+#    bold = '1' if style_options.get('bold', False) else '0'
+#    italic = '1' if style_options.get('italic', False) else '0'
+#    underline = '1' if style_options.get('underline', False) else '0'
+#    strikeout = '1' if style_options.get('strikeout', False) else '0'
+#    scale_x = style_options.get('scale_x', '100')
+#    scale_y = style_options.get('scale_y', '100')
+#    spacing = style_options.get('spacing', '0')
+#    angle = style_options.get('angle', '0')
+#    border_style = style_options.get('border_style', '1')
+#    outline_width = style_options.get('outline_width', '2')
+#    shadow_offset = style_options.get('shadow_offset', '0')
 
-    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
-    bold = '1' if style_options.get('bold', False) else '0'
-    italic = '1' if style_options.get('italic', False) else '0'
-    underline = '1' if style_options.get('underline', False) else '0'
-    strikeout = '1' if style_options.get('strikeout', False) else '0'
-    scale_x = style_options.get('scale_x', '100')
-    scale_y = style_options.get('scale_y', '100')
-    spacing = style_options.get('spacing', '0')
-    angle = style_options.get('angle', '0')
-    border_style = style_options.get('border_style', '1')
-    outline_width = style_options.get('outline_width', '2')
-    shadow_offset = style_options.get('shadow_offset', '0')
+box_color_raw = style_options.get('box_color', '#000000')
+box_color = rgb_to_ass_color(box_color_raw)
 
+font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
+bold = '1' if style_options.get('bold', False) else '0'
+italic = '1' if style_options.get('italic', False) else '0'
+underline = '1' if style_options.get('underline', False) else '0'
+strikeout = '1' if style_options.get('strikeout', False) else '0'
+scale_x = style_options.get('scale_x', '100')
+scale_y = style_options.get('scale_y', '100')
+spacing = style_options.get('spacing', '0')
+angle = style_options.get('angle', '0')
+border_style = str(style_options.get('border_style', '1'))
+outline_width = str(style_options.get('outline_width', '2'))
+shadow_offset = str(style_options.get('shadow_offset', '0'))
+
+margin_l = style_options.get('margin_l', '20')
+margin_r = style_options.get('margin_r', '20')
+margin_v = style_options.get('margin_v', '20')
+
+# --- NEW: обработка прозрачности фона при BorderStyle=3 ---
+background_opacity = float(style_options.get('background_opacity', 1.0))  # 0.0–1.0
+ass_back_color = box_color
+
+if border_style == '3':
+    # rgb_to_ass_color даёт &H00BBGGRR — 00 это альфа.
+    # Нам нужно заменить 00 на AA, где AA: 00 = непрозрачный, FF = полностью прозрачный.
+    base = box_color[2:]  # "00BBGGRR"
+    alpha = int(round((1.0 - max(0.0, min(1.0, background_opacity))) * 255))
+    alpha_hex = f"{alpha:02X}"
+    ass_back_color = f"&H{alpha_hex}{base[2:]}"  # "&H AABBGGRR"
+# --- END NEW ---
+
+
+    
     margin_l = style_options.get('margin_l', '20')
     margin_r = style_options.get('margin_r', '20')
     margin_v = style_options.get('margin_v', '20')
@@ -278,12 +313,21 @@ def create_style_line(style_options, video_resolution):
     # Default alignment in style (we override per event)
     alignment = 5
 
-    style_line = (
-        f"Style: Default,{font_family},{font_size},{line_color},{secondary_color},"
-        f"{outline_color},{box_color},{bold},{italic},{underline},{strikeout},"
-        f"{scale_x},{scale_y},{spacing},{angle},{border_style},{outline_width},"
-        f"{shadow_offset},{alignment},{margin_l},{margin_r},{margin_v},0"
-    )
+#    style_line = (
+#        f"Style: Default,{font_family},{font_size},{line_color},{secondary_color},"
+#        f"{outline_color},{box_color},{bold},{italic},{underline},{strikeout},"
+#        f"{scale_x},{scale_y},{spacing},{angle},{border_style},{outline_width},"
+#        f"{shadow_offset},{alignment},{margin_l},{margin_r},{margin_v},0"
+#    )
+
+style_line = (
+    f"Style: Default,{font_family},{font_size},{line_color},{secondary_color},"
+    f"{outline_color},{ass_back_color},{bold},{italic},{underline},{strikeout},"
+    f"{scale_x},{scale_y},{spacing},{angle},{border_style},{outline_width},"
+    f"{shadow_offset},{alignment},{margin_l},{margin_r},{margin_v},0"
+)
+
+    
     logger.info(f"Created ASS style line: {style_line}")
     return style_line
 
@@ -340,7 +384,26 @@ def handle_classic(transcription_result, style_options, replace_dict, video_reso
         processed_text = '\\N'.join(process_subtitle_text(line, replace_dict, all_caps, 0) for line in lines)
         start_time = format_ass_time(segment['start'])
         end_time = format_ass_time(segment['end'])
-        position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y})}}"
+#        position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y})}}"
+
+        # --- NEW: фоновые теги ---
+        background_tag = ""
+    
+        # BorderStyle=3 → реальная плашка с прозрачностью
+        if style_options.get("border_style", 1) == 3:
+            background_tag = "\\bord0"
+    
+        # BorderStyle=1 + outline_width>2 → мягкая glow-плашка
+        elif style_options.get("border_style", 1) == 1:
+            ow = int(style_options.get("outline_width", 2))
+            if ow > 2:
+                background_tag = f"\\bord{ow}"
+        # --- END NEW ---
+    
+        # position + фоновые теги
+        position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y}){background_tag}}}"        
+        
+        
         events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{processed_text}")
     logger.info(f"Handled {len(events)} dialogues in classic style.")
     return "\n".join(events)
